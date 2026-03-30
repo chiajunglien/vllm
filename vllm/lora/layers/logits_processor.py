@@ -158,6 +158,9 @@ class LogitsProcessorWithLoRA(BaseLayerWithLoRA):
 
         if logits is None:
             return None
+        
+        if current_platform.is_tpu():
+            return logits[:, : self.base_layer.vocab_size]
 
         if self.sharded_to_full_mapping_gpu is not None:
             # Reindex full logits tensor to ensure 1:1 mapping between

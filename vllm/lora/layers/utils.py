@@ -32,26 +32,28 @@ class LoRAMapping:
 def _get_lora_device(base_layer: nn.Module) -> torch.device:
     # code borrowed from https://github.com/fmmoret/vllm/blob/fm-support-lora-on-quantized-models/vllm/lora/layers.py#L34
     """Returns the device for where to place the LoRA tensors."""
-    # unquantizedLinear
-    if hasattr(base_layer, "weight"):
-        return base_layer.weight.device
-    # Compressed Tensor
-    elif hasattr(base_layer, "weight_packed"):
-        return base_layer.weight_packed.device
-    # GPTQ/AWQ
-    elif hasattr(base_layer, "qweight"):
-        return base_layer.qweight.device
-    # MoE layer
-    elif hasattr(base_layer, "w2_weight"):
-        return base_layer.w2_weight.device
-    # MoE Compressed Tensor
-    elif hasattr(base_layer, "w2_weight_packed"):
-        return base_layer.w2_weight_packed.device
-    # MoE GPTQ/AWQ/GGUF
-    elif hasattr(base_layer, "w2_qweight"):
-        return base_layer.w2_qweight.device
-    else:
-        raise ValueError(f"Unsupported base layer: {base_layer}")
+    
+    def get_dev(obj):
+        if obj is None:
+            return None
+        if isinstance(obj, (nn.ParameterList, list, tuple)):
+            return obj[0].device if len(obj) > 0 else None
+        if hasattr(obj, "device"):
+            return obj.device
+        return None
+
+    attr_names = ["weight", "weight_packed", "qweight", 
+                  "w2_weight", "w2_weight_packed", "w2_qweight"]
+    for attr in attr_names:
+        target = getattr(base_layer, attr, None)
+        dev = get_dev(target)
+        if dev is not None:
+            return dev
+
+    try:
+        return next(base_layer.parameters()).device
+    except StopIteration:
+        return torch.device("cpu")
 
 
 def _not_fully_sharded_can_replace(can_replace):

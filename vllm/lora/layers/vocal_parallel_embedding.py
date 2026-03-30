@@ -94,6 +94,9 @@ class VocabParallelEmbeddingWithLoRA(BaseLayerWithLoRA):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        full_output = self.base_layer.forward(x)
+        if current_platform.is_tpu():
+            return full_output
         # NB: Don't use torch.narrow here. torch.narrow triggers some
         # Dynamic Shape specialization in torch.compile
         num_tokens = x.shape[0]
@@ -103,7 +106,6 @@ class VocabParallelEmbeddingWithLoRA(BaseLayerWithLoRA):
             x + indices_1,
             self.lora_a_stacked_2d,
         )
-        full_output = self.base_layer.forward(x)
 
         full_output_org = full_output
         if full_output.ndim == 3:
