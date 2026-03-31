@@ -248,12 +248,7 @@ class InputProcessor:
                 tokenization_kwargs=tokenization_kwargs,
             )
 
-        if not current_platform.is_tpu():
-            current_platform.validate_request(processed_inputs, params)
-        else:
-            # todo(TPU): TpuPlatform.validate_request interface is currently 
-            # inconsistent with V1 InputProcessor. Skipping for now.
-            logger.debug("Skipping validate_request on TPU due to interface mismatch.")
+        current_platform.validate_request(processed_inputs, params)
 
         encoder_inputs, decoder_inputs = split_enc_dec_inputs(processed_inputs)
         self._validate_model_inputs(encoder_inputs, decoder_inputs)
