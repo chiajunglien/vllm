@@ -308,12 +308,9 @@ class DefaultModelLoader(BaseModelLoader):
         expert weights.  By computing the set upfront we can skip non-local
         expert tensors *before* reading them from disk.
         """
-        try:
-            from vllm.config import get_current_vllm_config
-            vllm_config = get_current_vllm_config()
-        except AssertionError:
-            logger.warning("vLLM config not set during weight filtering, skipping EP filter.")
-            return
+        from vllm.config import get_current_vllm_config
+
+        vllm_config = get_current_vllm_config()
         parallel_config = vllm_config.parallel_config
 
         if not (
